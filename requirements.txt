@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+python-multipart
+sentence-transformers
+faiss-cpu
+sqlite-utils
+pydantic
+llama-cpp-python  # optionnel : installer si vous voulez exécuter un modèle ggml local
+transformers       # optionnel fallback LLM
+torch              # nécessaire pour sentence-transformers et transformers
