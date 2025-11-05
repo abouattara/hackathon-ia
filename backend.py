@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 import json
 from bs4 import BeautifulSoup
-from rag_system import RAGSystem  # Assure-toi que rag_system.py est dans le même dossier
+from src.rag_system import RAGSystem  # Assure-toi que rag_system.py est dans le même dossier
 
 app = FastAPI(title="RAG Local JSON Optimisé")
 
