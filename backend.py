@@ -1,96 +1,78 @@
-#UploadFile sera utilisé pour la gestion des fichiers téléchargés via le formulaire
-#File pour déclarer des paramètres comme fichiers téléchargés
-#Form pour déclarer des paramètres comme des données de formulaire
-#Optional indique qu'une variable peut être d'un certain type ou non
-#Shutil va nous permettre de déplacer ou copier les fichiers téléchargés
-#os va nous permettre d'interagir avc notre système (créer des dossiers, supprimer, ...)
-# notre application sera donc amener à gérer des formulaires, des fichiers téléchargés et à effectuer 
-#des opérations de manipulation de fichiers
-LLAMA_API_URL = "http://localhost:11434/api/generate"
-LLAMA_MODEL_NAME = "llama3"
-from fastapi import FastAPI, Form, UploadFile, File
-from typing import Optional
-import shutil
-import os
-import time
-import requests
+from fastapi import FastAPI
+from pydantic import BaseModel
+import json
+from bs4 import BeautifulSoup
+from rag_system import RAGSystem  # Assure-toi que rag_system.py est dans le même dossier
 
-## --- Configuration pour le traitement des fichiers ---
-## Chemin temporaire pour stocker les fichiers reçus
+app = FastAPI(title="RAG Local JSON Optimisé")
 
-UPLOAD_DIR = "uploaded_files"
-os.makedirs(UPLOAD_DIR, exist_ok=True) 
-# -------------------------------------------------------------
-#   Initialisation
-#---------------------------------------------------------------
-app = FastAPI(title="Service Administratif")
+# -------------------------------
+# Charger le JSON (ta base de connaissances)
+# -------------------------------
+with open("data/corpus.json", "r", encoding="utf-8") as f:
+    data = json.load(f)
 
-# -------------------------------------------------------------
-# Traitement 
-# -------------------------------------------------------------
+# -------------------------------
+# Fonction de nettoyage HTML
+# -------------------------------
+def clean_html(html_text):
+    soup = BeautifulSoup(html_text, "html.parser")
+    return soup.get_text(separator=" ", strip=True)
 
-#cette fonction va consister à convertir les fichiers non textuels en texte pour notre modèle pour 
-#pourra ensuite lire et générer une reponse
+# -------------------------------
+# Préparer les documents
+# -------------------------------
+documents = []
+for d in data:
+    # Nettoyer le HTML
+    raw_text = ""
+    if "raw_html" in d:
+        try:
+            with open(d["raw_html"], "r", encoding="utf-8") as f_html:
+                raw_html_content = f_html.read()
+                raw_text = clean_html(raw_html_content)
+        except FileNotFoundError:
+            raw_text = ""
+    # Ajouter le contenu du JSON
+    content = d.get("content", "")
+    # Concaténer et ne garder que le texte utile
+    full_text = (raw_text + " " + content).strip()
+    if full_text:
+        documents.append(full_text)
 
-def treatment(filepath: str) -> str:
-    filename = os.path.basename(filepath)
-    time.sleep(1.5)
+# -------------------------------
+# Initialiser RAG
+# -------------------------------
+rag = RAGSystem()
+rag.add_documents(documents)
 
-    if filename.endswith(('.doc', '.docx', '.pdf')):
-        return f"Le document '{filename}' a été extrait"
-    elif filename.endswith(('.jpg', '.png', '.jpeg')):
-        return f"L'image '{filename}' a été analysée"
-    elif filename.endswith('.wav'):
-        return f"L'enregistrement audio a été transcrit"
-    
-    return f"Fichier '{filename}' traité avec succès"
+# -------------------------------
+# Modèle de requête
+# -------------------------------
+class QuestionRequest(BaseModel):
+    question: str
 
-# -----------------------------------------------------------
-# Definition de l'endpoint
-# ------------------------------------------------------------
+# -------------------------------
+# Endpoint pour poser une question
+# ------------------------------
+@app.post("/ask/")
+def ask_question(req: QuestionRequest):
+    question = req.question
 
-@app.post("/multiquery/")
+    # Pipeline RAG complet : recherche + génération
+    result = rag.query(question, n_results=3)  # 3 documents comme contexte
 
-async def requete_multimodal(
-    query: Optional[str] = Form(None),
-    file: Optional[UploadFile] = File(None)
-):
-    context = ""
+    # Retourner réponse synthétique + sources avec index
+    return {
+        "answer": result["answer"],
+        "sources": [
+            {
+                "index": i + 1,  # Numéro de la source [1], [2], [3]
+                "content": doc[:300] + "..." if len(doc) > 300 else doc,
+                "similarity": result["sources"][i].get("similarity", 0),
+                "metadata": result["sources"][i].get("metadata", {})  # Info du document source
+            }
+            for i, doc in enumerate(result["sources"])
+        ]
+    }
 
-    if file:
-        file_location = os.path.join(UPLOAD_DIR, file.filename)
-        with open(file_location, "wb") as f:
-            shutil.copyfileobj(file.file, f)
-
-        context = treatment(file_location)
-        os.remove(file_location)
-
-    if not query:
-        final_prompt = f"L'utilisateur a fourni un fichier. Contexte intégré : {context}. Quelle est l'information principale de ce fichier ?"
-    else:
-        final_prompt = (
-            f"Question de l'utilisateur : '{query}'."
-            f"Contextes supplémentaires fournis par le fichier : {context}."
-            "Reponds à la question en utilisant ce contexte"
-        )
-
-    try:
-        payload = {
-            "model" : LLAMA_MODEL_NAME,
-            "prompt" : final_prompt,
-            "stream" : False 
-        }
-        
-        response = requests.post(LLAMA_API_URL, json=payload)
-        response.raise_for_status()
-
-        data = response.json()
-        rag_response = data.get("response", "Erreur: Réponse llama vide.")
-
-    except requests.exceptions.RequestException as e:
-        rag_response = f"Erreur de connexion à l'API llama: {e}"
-
-    except Exception as e:
-        rag_response = f"Erreur inattendue lors du traitement llama: {e}"
-
-    return {"status": "success", "response": rag_response}

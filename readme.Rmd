@@ -1,0 +1,146 @@
+---
+title: "Untitled"
+author: "Abdoulaye OUATTARA"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+
+# SUJET ET JUSTIFICATION
+
+Le présent projet est un système de questions-réponses intelligent basé sur l'architecture RAG, spécifiquement conçu pour fournir des informations précises et actualisées sur les démarches administratives. Ainsi avec ce outils generative nous visons à bien guider toutes personnes en besion d'un papier adminstratif de tous types en passant par le passeport, la pièce d'indentité, les ordres mission ...etc. Bref fournir à l'utilisateur toutes les informations qui pourront lui être utile pour l'obtention de ces dites documents. 
+
+
+
+Le système fonctionne en deux étapes principales lors de la réception d'une requête :
+
+
+
+- **Récupération** (Retrieval) : Le système cherche les informations les plus pertinentes dans la collection de documents administratifs (PDF, HTML, etc.) et dans les fichiers/contextes supplémentaires (PDF, image, etc.) fournis par l'utilisateur.
+
+
+
+- **Génération Augmentée** (Augmented Generation) : Le modèle Ollama utilise ensuite à la fois son apprentissage de base et le contexte (les documents pertinents) récupéré à l'étape 1 pour formuler une réponse précise, complète et contextuellement appropriée à la question de l'utilisateur.
+
+
+
+## ARCHITECTURE TECHNIQUE
+
+
+
+
+
+
+| Composant        | Technologie              | Rôle    | Licence      |
+|----------|------------------|-------------------------|------------------|
+|Interface| Streamlit  | Construction rapide de l'application web interactive.          |https://www.apache.org/licenses/LICENSE-2.0 |
+| API Backend      | FastAPI                  | Framework moderne et rapide pour le service backend.           |https://opensource.org/licenses/MIT    |
+| LLM              | Ollama                   | Plateforme pour exécuter localement les modèles Mistral/Llama3.|https://opensource.org/licenses/MIT|
+| Embeddings       | Sentence Transformers    | Génération d'embeddings de haute qualité.                      |https://www.apache.org/licenses/LICENSE-2.0                          |
+| Vector DB        | ChromaDB                 | Base de données vectorielle légère pour la recherche de docs.  |https://www.apache.org/licenses/LICENSE-2.0                          |
+| OCR              | PyTesseract              | Interface Python pour l'outil Tesseract OCR.                   |https://www.apache.org/licenses/LICENSE-2.0                        |
+| Audio            | SpeechRecognition        | API pour la transcription vocale.                              |https://opensource.org/licenses/BSD-3-Clause                        |
+
+
+# INSTRUCTION D'INSTALLATION ET DE DEMARRAGE
+
+
+
+&nbsp;Prérequis
+
+
+
+* &nbsp; Python 3.8+
+* &nbsp; Tesseract OCR : Doit être installé sur votre système (requis pour l'OCR des images via `pytesseract`).
+* &nbsp; Ollama : Doit être installé et en cours d'exécution pour servir le modèle (Mistral est configuré par défaut dans `rag\_core.py`).
+
+
+
+&nbsp;   ```bash
+
+&nbsp;   # Installer Ollama et télécharger le modèle Mistral
+
+&nbsp;   ollama pull mistral
+
+&nbsp;   ```
+
+
+
+###### 1\. Configuration de l'Environnement
+
+
+
+Ouvrez le terminal:
+
+
+
+&nbsp;Créez et activez un environnement virtuel
+
+*python -m venv .venv*
+
+*source venv/bin/activate*  sous Linux/macOS
+
+*.venv\\Scripts\\Activate.psl*   sous Windows
+
+
+
+
+
+###### 2\. Installation des Dépendances Python
+
+
+
+Installez tous les packages requis par les trois fichiers :
+
+
+
+*'pip install fastapi'* 
+
+*'pip install uvicorn'* 
+
+*'pip install requests'* 
+
+*'pip install python-multipart'* 
+
+*'pip install sentence-transformers'* 
+
+*'pip install chromadb'*
+
+*'pip install streamlit'* 
+
+*'pip install pillow'* 
+
+*'pip install pytesseract'* 
+
+*'pip install SpeechRecognition'*
+
+*'pip install bs4'*
+
+
+
+###### 3\. Démarrage des Services
+
+
+
+Pour que l'application fonctionne, vous devez démarrer le service backend (FastAPI) et l'interface frontend (Streamlit) séparément.
+
+
+
+**A. Démarrer le Backend (FastAPI)**
+
+Ouvrez un premier terminal, activez votre environnement virtuel et exécutez le backend :
+
+
+
+'uvicorn backend:app --reload'
+
+
+
+**B. Démarrer le Frontend (Streamlit)**
+
+Ouvrez un deuxième terminal, activez votre environnement virtuel et démarrez le frontend :
+
+
+
+'streamlit run frontend.py'
+
