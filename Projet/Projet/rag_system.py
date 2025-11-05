@@ -23,36 +23,17 @@ class RAGSystem:
         # 3. Prompt système pour guider le LLM
         self.system_prompt = """Tu es un assistant expert qui répond aux questions en te basant UNIQUEMENT sur les documents fournis.
 
-Instructions IMPORTANTES :
-- Cite TOUJOURS tes sources en utilisant [1], [2], [3] etc. immédiatement après chaque information
-- Les numéros [1], [2], [3] correspondent exactement aux documents fournis ci-dessous
-- Organise ta réponse en paragraphes clairs et bien structurés
-- Si une information vient de plusieurs sources, cite-les toutes : [1][2]
-- Si tu ne trouves pas l'information dans les documents, dis-le clairement
-- Ne fabrique JAMAIS d'information qui n'est pas dans les documents
+        Instructions IMPORTANTES :
+        - Cite TOUJOURS tes sources en utilisant [1], [2], [3] etc. immédiatement après chaque information
+        - Les numéros [1], [2], [3] correspondent exactement aux documents fournis ci-dessous
+        - Organise ta réponse en paragraphes clairs et bien structurés
+        - Si une information vient de plusieurs sources, cite-les toutes : [1][2]
+        - Si tu ne trouves pas l'information dans les documents, dis-le clairement
+        - Ne fabrique JAMAIS d'information qui n'est pas dans les documents
 
-Exemple de réponse attendue :
-"Le terme 'intelligence artificielle' désigne la capacité d'une machine à imiter l'intelligence humaine [1]. Elle englobe plusieurs domaines comme l'apprentissage automatique et le traitement du langage naturel [2]. Les applications de l'IA sont variées et incluent la reconnaissance d'image et la traduction automatique [1][3]."
-"""
-
-        # 4. Configuration du LLM (choisir une option)
-        # Option A : Ollama (local, gratuit)
-        #self.llm_client = "ollama"  # Nécessite Ollama installé
-        # self.model_name = "mistral"  # ou "llama3", "gemma2", etc.
-        
-        # Option B : OpenAI
-        # from openai import OpenAI
-        # self.llm_client = OpenAI(api_key="votre_cle_api")
-        # self.model_name = "gpt-4o-mini"
-        
-        # Option C : Anthropic Claude
-        # from anthropic import Anthropic
-        # self.llm_client = Anthropic(api_key="votre_cle_api")
-        # self.model_name = "claude-3-5-sonnet-20241022"
-        
-        # Pour l'exemple, je mets Ollama (local)
-        self.llm_client = "ollama"
-        self.model_name = "mistral"
+        Exemple de réponse attendue :
+        "Le terme 'intelligence artificielle' désigne la capacité d'une machine à imiter l'intelligence humaine [1]. Elle englobe plusieurs domaines comme l'apprentissage automatique et le traitement du langage naturel [2]. Les applications de l'IA sont variées et incluent la reconnaissance d'image et la traduction automatique [1][3]."
+        """
 
     def add_documents(self, documents):
         embeddings = self.embedding_model.encode(
@@ -88,20 +69,21 @@ Exemple de réponse attendue :
         
         # Prompt complet
         user_prompt = f"""Documents de référence :
-{context}
+            {context}
 
-Question de l'utilisateur : {question}
+            Question de l'utilisateur : {question}
 
-Réponds à la question en citant tes sources avec [1], [2], [3] :"""
+            Réponds à la question en citant tes sources avec [1], [2], [3] :"""
 
         # Appel au LLM selon la configuration
+        self.llm_client = "ollama"  # Exemple de configuration
         if self.llm_client == "ollama":
             # Avec Ollama (local)
             import requests
             response = requests.post(
-                "http://localhost:11434/api/generate",
+                "http://localhost:11434/api/chat",
                 json={
-                    "model": self.model_name,
+                    "model": "mistral", ## mistral name i had add
                     "prompt": f"{self.system_prompt}\n\n{user_prompt}",
                     "stream": False
                 }
